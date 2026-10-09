@@ -18,7 +18,7 @@ output_parser = StrOutputParser()
 chain = prompt_template | model | output_parser
 
 # 5. Run the chain locally
-response = chain.invoke({"language": "Hebrew", "text": "Hello, how are you today?"})
+response = chain.invoke({"language": "Italian", "text": "Hello, how are you today?"})
 
 print(response)
 # Output: Ciao, come stai oggi?
