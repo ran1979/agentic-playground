@@ -27,6 +27,19 @@ Small, self-contained experiments with local LLM agents using [Ollama](https://o
    pip install -r requirements.txt
    ```
 
+### Requirements
+
+| Package | What it does | Why it's needed |
+|---------|--------------|-----------------|
+| `ollama` | Official Python client for the local Ollama server. | Used directly by the native agents (`ollama.chat` with tool calling). |
+| `langchain-core` | LangChain base abstractions: prompts, output parsers, runnables, `@tool`, messages. | Foundation for every LangChain/LangGraph example (the `\|` pipe chains). |
+| `langchain-community` | Community integrations for LangChain. | Provides `TextLoader` for loading the RAG document. |
+| `langchain-text-splitters` | Text chunking utilities. | `RecursiveCharacterTextSplitter` splits the document before embedding in `rag_example.py`. |
+| `langchain-ollama` | LangChain wrappers for Ollama. | `ChatOllama` (chat model) and `OllamaEmbeddings` (vectors) in the chain, RAG and LangGraph examples. |
+| `langchain-chroma` | LangChain wrapper for the Chroma vector store. | Stores and searches embeddings for retrieval in `rag_example.py`. |
+| `chromadb` | The Chroma vector database itself. | Backend that `langchain-chroma` runs on. |
+| `langgraph` | Graph-based agent orchestration (`StateGraph`, `ToolNode`). | Builds the agent loop in `langgraph_agent.py`. |
+
 Each example is standalone on purpose, so the weather tool is repeated across the agent files.
 
 ## Run
