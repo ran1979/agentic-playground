@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import urllib.parse
 import urllib.request
@@ -15,28 +17,26 @@ def get_live_weather(location: str) -> str:
         # Encode city name for URL safety (e.g., spaces to %20)
         encoded_location = urllib.parse.quote(location)
         url = f"https://wttr.in/{encoded_location}?format=j1"
-        
+
         req = urllib.request.Request(
-            url, 
+            url,
             headers={"User-Agent": "Mozilla/5.0"}
         )
-        
+
         with urllib.request.urlopen(req, timeout=5) as response:
-            if response.status != 200:
-                return f"Error: Unable to reach weather service (status {response.status})."
-            
             data = json.loads(response.read().decode("utf-8"))
-            
+
             # Extract relevant fields from wttr.in JSON schema
             current = data["current_condition"][0]
             temp_c = current["temp_C"]
             condition = current["weatherDesc"][0]["value"]
             humidity = current["humidity"]
             wind_kmh = current["windspeedKmph"]
-            
+
             return f"Current weather in {location}: {temp_c}°C, {condition}. Humidity: {humidity}%, Wind: {wind_kmh} km/h."
-            
+
     except Exception as e:
+        # Return the error as text so the LLM can see it and respond gracefully
         return f"Failed to retrieve weather data for {location}: {str(e)}"
 
 
@@ -46,7 +46,7 @@ AVAILABLE_TOOLS = {
 }
 
 
-def run_agent(user_prompt: str, model_name: str = "llama3.2:latest", max_iterations: int = 5):
+def run_agent(user_prompt: str, model_name: str = "llama3.2:latest", max_iterations: int = 5) -> str | None:
     """Agent execution loop using Ollama and live external API calls."""
     messages = [
         {
@@ -99,7 +99,7 @@ def run_agent(user_prompt: str, model_name: str = "llama3.2:latest", max_iterati
             })
 
     print("[Warning]: Loop limit exceeded.")
-    return "Agent timed out."
+    return None  # no final answer within max_iterations
 
 
 if __name__ == "__main__":

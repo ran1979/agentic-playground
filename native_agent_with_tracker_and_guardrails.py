@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import urllib.parse
 import urllib.request
@@ -9,7 +11,7 @@ import ollama
 class UsageTracker:
     def __init__(self, prompt_price_per_m: float = 0.0, eval_price_per_m: float = 0.0):
         """
-        For local models (Ollama), prices are $0.0, but tracking tokens is vital 
+        For local models (Ollama), prices are $0.0, but tracking tokens is vital
         for context window monitoring. Pass actual prices for commercial APIs.
         """
         self.prompt_tokens = 0
@@ -48,22 +50,26 @@ class UsageTracker:
 ALLOWED_CITIES = {"tokyo", "tel aviv", "new york", "london", "paris", "kfar saba"}
 
 def validate_input_prompt(prompt: str) -> bool:
-    """Input Guardrail: Prevent huge payloads or malicious keywords."""
+    """Input Guardrail: Prevent huge payloads or malicious keywords.
+
+    Demo only: a keyword blocklist is trivially bypassed. Real systems need
+    layered defenses (moderation models, least-privilege tools, output checks).
+    """
     if len(prompt) > 500:
         print("[Guardrail Blocked]: Prompt exceeds maximum allowable character limit.")
         return False
-    
+
     forbidden_keywords = ["drop database", "ignore previous instructions", "system prompt"]
     if any(keyword in prompt.lower() for keyword in forbidden_keywords):
         print("[Guardrail Blocked]: Forbidden patterns detected in prompt.")
         return False
-        
+
     return True
 
 def validate_tool_args(tool_name: str, args: dict) -> bool:
     """Tool Execution Guardrail: Validate parameters before running Python code."""
     if tool_name == "get_live_weather":
-        location = args.get("location", "").lower()
+        location = str(args.get("location") or "").strip().lower()
         if not location:
             print("[Tool Guardrail Error]: Location parameter is required.")
             return False
@@ -71,7 +77,7 @@ def validate_tool_args(tool_name: str, args: dict) -> bool:
         if location not in ALLOWED_CITIES:
             print(f"[Tool Guardrail Blocked]: '{location}' is not in the allowed destinations list.")
             return False
-            
+
     return True
 
 
@@ -90,6 +96,7 @@ def get_live_weather(location: str) -> str:
             current = data["current_condition"][0]
             return f"Current weather in {location}: {current['temp_C']}°C, {current['weatherDesc'][0]['value']}."
     except Exception as e:
+        # Return the error as text so the LLM can see it and respond gracefully
         return f"Tool Execution Failure: {str(e)}"
 
 AVAILABLE_TOOLS = {"get_live_weather": get_live_weather}
@@ -98,10 +105,10 @@ AVAILABLE_TOOLS = {"get_live_weather": get_live_weather}
 # =====================================================================
 # 4. PROTECTED AGENT LOOP
 # =====================================================================
-def run_agent(user_prompt: str, model_name: str = "llama3.2:latest", max_iterations: int = 5):
+def run_agent(user_prompt: str, model_name: str = "llama3.2:latest", max_iterations: int = 5) -> str | None:
     # STEP 1: INPUT GUARDRAIL CHECK
     if not validate_input_prompt(user_prompt):
-        return "Request rejected by security guardrails."
+        return None  # rejected by input guardrail
 
     # Initialize Token/Cost Tracker
     # Set pricing e.g. for OpenAI GPT-4o: prompt_price_per_m=2.50, eval_price_per_m=10.00
@@ -157,7 +164,7 @@ def run_agent(user_prompt: str, model_name: str = "llama3.2:latest", max_iterati
             })
 
     print("[Warning]: Loop limit exceeded.")
-    return "Agent timed out."
+    return None  # no final answer within max_iterations
 
 
 if __name__ == "__main__":

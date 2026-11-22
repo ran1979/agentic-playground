@@ -2,24 +2,19 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_ollama import ChatOllama
 
-# 1. Initialize the Local Ollama Model
+# 1. Initialize the local Ollama model
 model = ChatOllama(model="llama3", temperature=0)
 
-# 2. Define the Prompt Template
+# 2. Define the prompt template
 prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant that translates text from English to {language}."),
-    ("user", "{text}")
+    ("system", "You are a helpful assistant that translates text from English to {language}. Reply with only the translation."),
+    ("user", "{text}"),
 ])
 
-# 3. Create the Output Parser
-output_parser = StrOutputParser()
+# 3. Chain the components together using the pipe operator (|)
+chain = prompt_template | model | StrOutputParser()
 
-# 4. Chain the components together using the pipe operator (|)
-chain = prompt_template | model | output_parser
-
-# 5. Run the chain locally
-response = chain.invoke({"language": "Italian", "text": "Hello, how are you today?"})
-
-print(response)
-# Output: Ciao, come stai oggi?
-
+if __name__ == "__main__":
+    # 4. Run the chain locally
+    print(chain.invoke({"language": "Italian", "text": "Hello, how are you today?"}))
+    # Example output: Ciao, come stai oggi?

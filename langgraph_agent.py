@@ -6,11 +6,11 @@ from typing import Annotated, TypedDict
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
-from langgraph.graph import StateGraph, END
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-# need to run 1st 'pip install langgraph langchain-ollama'
+# Setup: pip install -r requirements.txt
 
 # 1. DEFINE TOOLS USING LANGCHAIN DECORATOR
 @tool
@@ -27,9 +27,6 @@ def get_live_weather(location: str) -> str:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
 
         with urllib.request.urlopen(req, timeout=5) as response:
-            if response.status != 200:
-                return f"Error: Unable to reach weather service (status {response.status})."
-
             data = json.loads(response.read().decode("utf-8"))
             current = data["current_condition"][0]
             temp_c = current["temp_C"]
@@ -40,6 +37,7 @@ def get_live_weather(location: str) -> str:
             return f"Current weather in {location}: {temp_c}°C, {condition}. Humidity: {humidity}%, Wind: {wind_kmh} km/h."
 
     except Exception as e:
+        # Return the error as text so the LLM can see it and respond gracefully
         return f"Failed to retrieve weather data for {location}: {str(e)}"
 
 
@@ -71,7 +69,7 @@ workflow.add_node("agent", call_model)
 workflow.add_node("tools", ToolNode(tools)) # Prebuilt node that executes tool calls automatically
 
 # Add Edges
-workflow.set_entry_point("agent")
+workflow.add_edge(START, "agent")
 
 # `tools_condition` inspects the last message:
 # -> If the LLM output `tool_calls`, route to "tools" node
@@ -99,8 +97,8 @@ if __name__ == "__main__":
         for node_name, output in event.items():
             print(f"\n[Node Executed]: {node_name}")
             latest_msg = output["messages"][-1]
-            
-            if hasattr(latest_msg, "tool_calls") and latest_msg.tool_calls:
+
+            if getattr(latest_msg, "tool_calls", None):
                 print(f"  Tool Calls Requested: {latest_msg.tool_calls}")
             elif latest_msg.type == "tool":
                 print(f"  Tool Result: {latest_msg.content}")

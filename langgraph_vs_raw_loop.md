@@ -9,7 +9,7 @@ sequenceDiagram
 
     User->>State: Input initial message
     State->>NodeAgent: Pass state["messages"]
-    
+
     rect rgb(240, 244, 250)
         note over NodeAgent, EdgeCond: Iteration 1
         NodeAgent->>NodeAgent: ChatOllama.invoke()
